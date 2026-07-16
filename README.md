@@ -14,7 +14,7 @@ Rust 側は `xiangting::calculate_replacement_number` と `xiangting::calculate_
 
 ## 必要環境
 
-- Node.js 20.19 以上
+- Node.js 24 LTS 以上
 - Rust stable
 - `wasm32-unknown-unknown` ターゲット
 - `wasm-bindgen-cli` 0.2.126
