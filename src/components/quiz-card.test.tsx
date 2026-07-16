@@ -31,6 +31,12 @@ const question: QuizQuestion = {
         effectiveTiles: [{ tile: "2p", remaining: 2 }],
         totalUkeire: 2,
       },
+      {
+        discard: "3p",
+        shanten: 2,
+        effectiveTiles: [{ tile: "4p", remaining: 3 }],
+        totalUkeire: 3,
+      },
     ],
   },
 };
@@ -69,6 +75,9 @@ describe("QuizCard", () => {
     expect(resultText("比較中：1p切り")).toBeInTheDocument();
     expect(screen.getByText((_, element) => element?.textContent === "有効牌：2p×2")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "1pを選択" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("heading", { name: /^1p\s*切り$/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^9m\s*切り$/ })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /^3p\s*切り$/ })).not.toBeInTheDocument();
   });
 
   it("keeps the refresh button available before answering", () => {

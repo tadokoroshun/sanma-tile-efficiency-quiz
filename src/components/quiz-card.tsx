@@ -30,14 +30,15 @@ export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCa
     answeredCandidate !== undefined && bestCandidate !== undefined
       ? bestCandidate.totalUkeire - answeredCandidate.totalUkeire
       : 0;
+  const bestCandidates = question.evaluation.candidates.filter((candidate) =>
+    question.evaluation.bestDiscards.includes(candidate.discard),
+  );
   const displayedCandidates =
     selectedCandidate === undefined
-      ? question.evaluation.candidates
+      ? bestCandidates
       : [
           selectedCandidate,
-          ...question.evaluation.candidates.filter(
-            (candidate) => candidate.discard !== selectedCandidate.discard,
-          ),
+          ...bestCandidates.filter((candidate) => candidate.discard !== selectedCandidate.discard),
         ];
 
   function nextQuestion(): void {
