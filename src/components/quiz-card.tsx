@@ -14,27 +14,42 @@ type QuizCardProps = {
 
 export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCardProps) {
   const [selectedDiscard, setSelectedDiscard] = useState<string | null>(null);
+  const [answeredDiscard, setAnsweredDiscard] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
   const selectedCandidate = question.evaluation.candidates.find(
     (candidate) => candidate.discard === selectedDiscard,
   );
+  const answeredCandidate = question.evaluation.candidates.find(
+    (candidate) => candidate.discard === answeredDiscard,
+  );
   const bestCandidate = question.evaluation.candidates.find(
     (candidate) => question.evaluation.bestDiscards.includes(candidate.discard),
   );
-  const correct = selectedDiscard !== null && isCorrectDiscard(selectedDiscard, question.evaluation);
+  const correct = answeredDiscard !== null && isCorrectDiscard(answeredDiscard, question.evaluation);
   const ukeireDifference =
-    selectedCandidate !== undefined && bestCandidate !== undefined
-      ? bestCandidate.totalUkeire - selectedCandidate.totalUkeire
+    answeredCandidate !== undefined && bestCandidate !== undefined
+      ? bestCandidate.totalUkeire - answeredCandidate.totalUkeire
       : 0;
+  const displayedCandidates =
+    selectedCandidate === undefined
+      ? question.evaluation.candidates
+      : [
+          selectedCandidate,
+          ...question.evaluation.candidates.filter(
+            (candidate) => candidate.discard !== selectedCandidate.discard,
+          ),
+        ];
 
   function nextQuestion(): void {
     setSelectedDiscard(null);
+    setAnsweredDiscard(null);
     setAnswered(false);
     onNextQuestion();
   }
 
   function refreshQuestion(): void {
     setSelectedDiscard(null);
+    setAnsweredDiscard(null);
     setAnswered(false);
     onRefreshQuestion();
   }
@@ -62,7 +77,6 @@ export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCa
               type="button"
               aria-label={`${label}を選択`}
               aria-pressed={selectedDiscard === label}
-              disabled={answered}
               onClick={() => setSelectedDiscard(label)}
             >
               <MahjongTile decorative tileIndex={tileIndex} className="hand-tile-image" />
@@ -76,14 +90,17 @@ export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCa
           className="answer-button"
           type="button"
           disabled={selectedDiscard === null}
-          onClick={() => setAnswered(true)}
+          onClick={() => {
+            setAnsweredDiscard(selectedDiscard);
+            setAnswered(true);
+          }}
         >
           回答する
         </button>
       ) : (
         <div className={`answer-result ${correct ? "is-correct" : "is-incorrect"}`}>
           <p>
-            あなたの選択：<TileLabel label={selectedDiscard ?? ""} />
+            あなたの選択：<TileLabel label={answeredDiscard ?? ""} />
           </p>
           <h3>{correct ? "正解！" : "不正解"}</h3>
           <p>
@@ -96,9 +113,19 @@ export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCa
             ))}
           </p>
           <p>受け入れ差：{ukeireDifference}枚</p>
+          <p className="comparison-hint">牌をタップすると、その打牌の有効牌を比較できます。</p>
+          {selectedCandidate !== undefined ? (
+            <p className="comparison-label">
+              比較中：<TileLabel label={selectedCandidate.discard} />切り
+            </p>
+          ) : null}
           <div className="candidate-list">
-            {question.evaluation.candidates.map((candidate) => (
-              <CandidateResult candidate={candidate} key={candidate.discard} />
+            {displayedCandidates.map((candidate) => (
+              <CandidateResult
+                active={candidate.discard === selectedDiscard}
+                candidate={candidate}
+                key={candidate.discard}
+              />
             ))}
           </div>
           <button className="next-button" type="button" onClick={nextQuestion}>
@@ -110,9 +137,9 @@ export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCa
   );
 }
 
-function CandidateResult({ candidate }: { candidate: DiscardEvaluation }) {
+function CandidateResult({ active, candidate }: { active: boolean; candidate: DiscardEvaluation }) {
   return (
-    <article className="candidate-result">
+    <article className={`candidate-result ${active ? "is-active" : ""}`}>
       <h4>
         <TileLabel label={candidate.discard} />切り
       </h4>

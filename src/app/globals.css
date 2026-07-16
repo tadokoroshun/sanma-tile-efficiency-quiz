@@ -37,8 +37,11 @@ h1 { margin: 0; font-size: clamp(1.8rem, 7vw, 2.5rem); }
 .answer-result > p { margin: 8px 0; }
 .is-correct { background: #e1f4e5; border: 1px solid #77b384; }
 .is-incorrect { background: #fff0ea; border: 1px solid #d9977f; }
+.comparison-hint { color: #4a6350; font-size: 0.9rem; }
+.comparison-label { font-weight: 700; }
 .candidate-list { display: grid; gap: 10px; margin-top: 16px; }
 .candidate-result { padding: 12px; background: rgb(255 255 255 / 75%); border: 1px solid #d4dfd2; border-radius: 8px; }
+.candidate-result.is-active { border-color: #216038; box-shadow: 0 0 0 2px rgb(33 96 56 / 18%); }
 .candidate-result h4, .candidate-result p { margin: 4px 0; }
 .candidate-result p { line-height: 1.5; }
 .error-message { color: #8e2b13; }

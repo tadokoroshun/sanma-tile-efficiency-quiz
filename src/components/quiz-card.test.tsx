@@ -58,6 +58,19 @@ describe("QuizCard", () => {
     expect(resultText("受け入れ差：0枚")).toBeInTheDocument();
   });
 
+  it("shows the tapped discard's effective tiles after answering", () => {
+    render(<QuizCard question={question} onNextQuestion={vi.fn()} onRefreshQuestion={vi.fn()} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "1mを選択" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "回答する" }));
+    fireEvent.click(screen.getByRole("button", { name: "1pを選択" }));
+
+    expect(resultText("あなたの選択：1m")).toBeInTheDocument();
+    expect(resultText("比較中：1p切り")).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.textContent === "有効牌：2p×2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1pを選択" })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("keeps the refresh button available before answering", () => {
     render(<QuizCard question={question} onNextQuestion={vi.fn()} onRefreshQuestion={vi.fn()} />);
 
