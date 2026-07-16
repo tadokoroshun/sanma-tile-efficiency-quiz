@@ -1,0 +1,7 @@
+node_modules/
+.next/
+out/
+coverage/
+wasm/target/
+src/wasm/pkg/
+*.tsbuildinfo

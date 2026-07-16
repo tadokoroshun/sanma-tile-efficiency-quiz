@@ -1,0 +1,35 @@
+{
+  "name": "sanma-tile-efficiency-quiz",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "npm run wasm:build && next build --webpack",
+    "start": "next start",
+    "wasm:build": "./scripts/build-wasm.sh",
+    "test": "vitest run",
+    "typecheck": "tsc --project tsconfig.typecheck.json --noEmit"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-riichi-mahjong-tiles": "^2.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.1",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "jsdom": "26.1.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.10"
+    }
+  }
+}
