@@ -2,6 +2,8 @@ export type TileIndex = number;
 
 export type TileCount = number[];
 
+export type QuizMode = "standard" | "flush";
+
 export type EffectiveTile = {
   tile: string;
   remaining: number;

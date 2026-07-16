@@ -43,7 +43,15 @@ const question: QuizQuestion = {
 
 describe("QuizCard", () => {
   it("shows the answer result only after answering", () => {
-    render(<QuizCard question={question} onNextQuestion={vi.fn()} onRefreshQuestion={vi.fn()} />);
+    render(
+      <QuizCard
+        mode="standard"
+        question={question}
+        onModeChange={vi.fn()}
+        onNextQuestion={vi.fn()}
+        onRefreshQuestion={vi.fn()}
+      />,
+    );
 
     expect(screen.queryByText("最善打：1m、9m")).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "1mを選択" })[0]);
@@ -55,7 +63,15 @@ describe("QuizCard", () => {
   });
 
   it("accepts every tied best discard as correct", () => {
-    render(<QuizCard question={question} onNextQuestion={vi.fn()} onRefreshQuestion={vi.fn()} />);
+    render(
+      <QuizCard
+        mode="standard"
+        question={question}
+        onModeChange={vi.fn()}
+        onNextQuestion={vi.fn()}
+        onRefreshQuestion={vi.fn()}
+      />,
+    );
 
     fireEvent.click(screen.getAllByRole("button", { name: "9mを選択" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "回答する" }));
@@ -65,7 +81,15 @@ describe("QuizCard", () => {
   });
 
   it("shows the tapped discard's effective tiles after answering", () => {
-    render(<QuizCard question={question} onNextQuestion={vi.fn()} onRefreshQuestion={vi.fn()} />);
+    render(
+      <QuizCard
+        mode="standard"
+        question={question}
+        onModeChange={vi.fn()}
+        onNextQuestion={vi.fn()}
+        onRefreshQuestion={vi.fn()}
+      />,
+    );
 
     fireEvent.click(screen.getAllByRole("button", { name: "1mを選択" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "回答する" }));
@@ -81,8 +105,33 @@ describe("QuizCard", () => {
   });
 
   it("keeps the refresh button available before answering", () => {
-    render(<QuizCard question={question} onNextQuestion={vi.fn()} onRefreshQuestion={vi.fn()} />);
+    render(
+      <QuizCard
+        mode="standard"
+        question={question}
+        onModeChange={vi.fn()}
+        onNextQuestion={vi.fn()}
+        onRefreshQuestion={vi.fn()}
+      />,
+    );
 
     expect(screen.getByRole("button", { name: "問題を更新" })).toBeVisible();
+  });
+
+  it("switches to flush mode", () => {
+    const onModeChange = vi.fn();
+    render(
+      <QuizCard
+        mode="standard"
+        question={question}
+        onModeChange={onModeChange}
+        onNextQuestion={vi.fn()}
+        onRefreshQuestion={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "染め手" }));
+
+    expect(onModeChange).toHaveBeenCalledWith("flush");
   });
 });

@@ -53,6 +53,9 @@ export const QUIZ_HAND_TILE_INDICES: readonly TileIndex[] = [
   26,
 ];
 
+export const PINZU_TILE_INDICES: readonly TileIndex[] = [9, 10, 11, 12, 13, 14, 15, 16, 17];
+export const SOUZU_TILE_INDICES: readonly TileIndex[] = [18, 19, 20, 21, 22, 23, 24, 25, 26];
+
 const TILE_LABELS = [
   "1m",
   "2m",
@@ -116,24 +119,28 @@ export function toTileCounts(hand: readonly TileIndex[]): TileCount {
   return counts;
 }
 
-export function createRandomSanmaHand(random: () => number = Math.random): TileIndex[] {
+export function createRandomSanmaHand(
+  mode: "standard" | "flush" = "standard",
+  random: () => number = Math.random,
+): TileIndex[] {
   const counts = Array<number>(TILE_KIND_COUNT).fill(0);
   const hand: TileIndex[] = [];
+  const availableTiles = mode === "flush" ? (random() < 0.5 ? PINZU_TILE_INDICES : SOUZU_TILE_INDICES) : QUIZ_HAND_TILE_INDICES;
 
   while (hand.length < HAND_TILE_COUNT) {
     const firstTile = chooseTile(
-      QUIZ_HAND_TILE_INDICES.filter((tileIndex) => {
+      availableTiles.filter((tileIndex) => {
         if (counts[tileIndex] >= 4) {
           return false;
         }
-        return connectedQuizTiles(tileIndex).some(
+        return connectedQuizTiles(tileIndex, availableTiles).some(
           (connectedTile) => counts[connectedTile] + Number(connectedTile === tileIndex) < 4,
         );
       }),
       random,
     );
     const secondTile = chooseTile(
-      connectedQuizTiles(firstTile).filter(
+      connectedQuizTiles(firstTile, availableTiles).filter(
         (tileIndex) => counts[tileIndex] + Number(tileIndex === firstTile) < 4,
       ),
       random,
@@ -156,8 +163,11 @@ export function hasCompletelyIsolatedTile(hand: readonly TileIndex[]): boolean {
   );
 }
 
-function connectedQuizTiles(tileIndex: TileIndex): TileIndex[] {
-  return QUIZ_HAND_TILE_INDICES.filter((candidate) => {
+function connectedQuizTiles(
+  tileIndex: TileIndex,
+  availableTiles: readonly TileIndex[] = QUIZ_HAND_TILE_INDICES,
+): TileIndex[] {
+  return availableTiles.filter((candidate) => {
     const sameSuit = (tileIndex <= 17 && candidate <= 17) || (tileIndex >= 18 && candidate >= 18);
     return sameSuit && Math.abs(tileIndex - candidate) <= 2;
   });

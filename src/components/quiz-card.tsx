@@ -4,15 +4,23 @@ import { useState } from "react";
 import { MahjongTile } from "@/components/mahjong-tile";
 import { isCorrectDiscard } from "@/lib/quiz";
 import { tileLabel } from "@/lib/tiles";
-import type { DiscardEvaluation, QuizQuestion, TileIndex } from "@/lib/types";
+import type { DiscardEvaluation, QuizMode, QuizQuestion, TileIndex } from "@/lib/types";
 
 type QuizCardProps = {
+  mode: QuizMode;
   question: QuizQuestion;
+  onModeChange: (mode: QuizMode) => void;
   onNextQuestion: () => void;
   onRefreshQuestion: () => void;
 };
 
-export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCardProps) {
+export function QuizCard({
+  mode,
+  question,
+  onModeChange,
+  onNextQuestion,
+  onRefreshQuestion,
+}: QuizCardProps) {
   const [selectedDiscard, setSelectedDiscard] = useState<string | null>(null);
   const [answeredDiscard, setAnsweredDiscard] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -55,6 +63,16 @@ export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCa
     onRefreshQuestion();
   }
 
+  function changeMode(nextMode: QuizMode): void {
+    if (nextMode === mode) {
+      return;
+    }
+    setSelectedDiscard(null);
+    setAnsweredDiscard(null);
+    setAnswered(false);
+    onModeChange(nextMode);
+  }
+
   return (
     <section className="quiz-card" aria-live="polite">
       <button
@@ -66,6 +84,27 @@ export function QuizCard({ question, onNextQuestion, onRefreshQuestion }: QuizCa
       >
         ↻
       </button>
+      <div className="mode-selector" aria-label="出題モード">
+        <button
+          className={mode === "standard" ? "is-selected" : ""}
+          type="button"
+          aria-pressed={mode === "standard"}
+          onClick={() => changeMode("standard")}
+        >
+          通常
+        </button>
+        <button
+          className={mode === "flush" ? "is-selected" : ""}
+          type="button"
+          aria-pressed={mode === "flush"}
+          onClick={() => changeMode("flush")}
+        >
+          染め手
+        </button>
+      </div>
+      <p className="mode-hint">
+        {mode === "flush" ? "筒子または索子だけの一色手です。" : "筒子・索子から出題します。"}
+      </p>
       <p className="shanten-hint">現在のシャンテン数：{question.evaluation.currentShanten}</p>
       <h2>切る牌を選んでください</h2>
       <div className="tile-grid" aria-label="手牌">

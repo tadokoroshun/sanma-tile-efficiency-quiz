@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { QuizCard } from "@/components/quiz-card";
 import { generateQuizQuestion } from "@/lib/quiz";
-import type { QuizQuestion, SanmaEvaluator } from "@/lib/types";
+import type { QuizMode, QuizQuestion, SanmaEvaluator } from "@/lib/types";
 import { loadSanmaEvaluator } from "@/lib/wasm";
 
 type Status = "loading" | "ready" | "error";
@@ -13,10 +13,11 @@ export function QuizClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [evaluator, setEvaluator] = useState<SanmaEvaluator | null>(null);
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
+  const [mode, setMode] = useState<QuizMode>("standard");
 
-  const createQuestion = useCallback((nextEvaluator: SanmaEvaluator): void => {
+  const createQuestion = useCallback((nextEvaluator: SanmaEvaluator, nextMode: QuizMode): void => {
     try {
-      setQuestion(generateQuizQuestion(nextEvaluator));
+      setQuestion(generateQuizQuestion(nextEvaluator, nextMode));
       setErrorMessage(null);
       setStatus("ready");
     } catch (error: unknown) {
@@ -33,7 +34,7 @@ export function QuizClient() {
           return;
         }
         setEvaluator(() => nextEvaluator);
-        createQuestion(nextEvaluator);
+        createQuestion(nextEvaluator, "standard");
       })
       .catch((error: unknown) => {
         if (active) {
@@ -65,8 +66,13 @@ export function QuizClient() {
   return (
     <QuizCard
       question={question}
-      onNextQuestion={() => createQuestion(evaluator)}
-      onRefreshQuestion={() => createQuestion(evaluator)}
+      mode={mode}
+      onModeChange={(nextMode) => {
+        setMode(nextMode);
+        createQuestion(evaluator, nextMode);
+      }}
+      onNextQuestion={() => createQuestion(evaluator, mode)}
+      onRefreshQuestion={() => createQuestion(evaluator, mode)}
     />
   );
 }
