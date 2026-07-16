@@ -1,7 +1,7 @@
 import { createRandomSanmaHand, toTileCounts } from "@/lib/tiles";
 import type { HandEvaluation, QuizQuestion, SanmaEvaluator } from "@/lib/types";
 
-const MIN_PREFERRED_SHANTEN = 0;
+const MIN_PREFERRED_SHANTEN = 1;
 const MAX_PREFERRED_SHANTEN = 3;
 const MAX_GENERATION_ATTEMPTS = 160;
 
@@ -12,7 +12,7 @@ export function generateQuizQuestion(evaluate: SanmaEvaluator): QuizQuestion {
     const hand = createRandomSanmaHand();
     const evaluation = evaluate(toTileCounts(hand));
     const question = { hand, evaluation };
-    if (evaluation.currentShanten >= 0) {
+    if (evaluation.currentShanten >= MIN_PREFERRED_SHANTEN) {
       fallback ??= question;
     }
 
