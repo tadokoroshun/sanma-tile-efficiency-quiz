@@ -1,4 +1,4 @@
-import type { TileCount, TileIndex } from "@/lib/types";
+import type { GenerationMode, TileCount, TileIndex } from "@/lib/types";
 
 export const TILE_KIND_COUNT = 34;
 export const HAND_TILE_COUNT = 14;
@@ -120,12 +120,17 @@ export function toTileCounts(hand: readonly TileIndex[]): TileCount {
 }
 
 export function createRandomSanmaHand(
-  mode: "standard" | "flush" = "standard",
+  mode: GenerationMode = "standard",
   random: () => number = Math.random,
 ): TileIndex[] {
   const counts = Array<number>(TILE_KIND_COUNT).fill(0);
   const hand: TileIndex[] = [];
-  const availableTiles = mode === "flush" ? (random() < 0.5 ? PINZU_TILE_INDICES : SOUZU_TILE_INDICES) : QUIZ_HAND_TILE_INDICES;
+  const availableTiles =
+    mode === "flush"
+      ? random() < 0.5
+        ? PINZU_TILE_INDICES
+        : SOUZU_TILE_INDICES
+      : QUIZ_HAND_TILE_INDICES;
 
   while (hand.length < HAND_TILE_COUNT) {
     const firstTile = chooseTile(

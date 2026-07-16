@@ -2,8 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { QuizCard } from "@/components/quiz-card";
+import {
+  chooseReviewMistake,
+  loadMistakes,
+  recordMistake,
+  removeMistake,
+} from "@/lib/mistakes";
 import { generateQuizQuestion } from "@/lib/quiz";
-import type { QuizMode, QuizQuestion, SanmaEvaluator } from "@/lib/types";
+import { toTileCounts } from "@/lib/tiles";
+import type {
+  GenerationMode,
+  QuizMode,
+  QuizQuestion,
+  SanmaEvaluator,
+} from "@/lib/types";
 import { loadSanmaEvaluator } from "@/lib/wasm";
 
 type Status = "loading" | "ready" | "error";
@@ -14,10 +26,31 @@ export function QuizClient() {
   const [evaluator, setEvaluator] = useState<SanmaEvaluator | null>(null);
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
   const [mode, setMode] = useState<QuizMode>("standard");
+  const [questionMode, setQuestionMode] = useState<GenerationMode>("standard");
+  const [reviewCount, setReviewCount] = useState(0);
 
   const createQuestion = useCallback((nextEvaluator: SanmaEvaluator, nextMode: QuizMode): void => {
     try {
-      setQuestion(generateQuizQuestion(nextEvaluator, nextMode));
+      if (nextMode === "review") {
+        const mistakes = loadMistakes();
+        setReviewCount(mistakes.length);
+        const mistake = chooseReviewMistake(mistakes);
+        if (mistake !== undefined) {
+          setQuestion({
+            hand: mistake.hand,
+            evaluation: nextEvaluator(toTileCounts(mistake.hand)),
+          });
+          setQuestionMode(mistake.mode);
+        } else {
+          setMode("standard");
+          setQuestion(generateQuizQuestion(nextEvaluator, "standard"));
+          setQuestionMode("standard");
+        }
+      } else {
+        setQuestion(generateQuizQuestion(nextEvaluator, nextMode));
+        setQuestionMode(nextMode);
+        setReviewCount(loadMistakes().length);
+      }
       setErrorMessage(null);
       setStatus("ready");
     } catch (error: unknown) {
@@ -34,6 +67,7 @@ export function QuizClient() {
           return;
         }
         setEvaluator(() => nextEvaluator);
+        setReviewCount(loadMistakes().length);
         createQuestion(nextEvaluator, "standard");
       })
       .catch((error: unknown) => {
@@ -67,6 +101,26 @@ export function QuizClient() {
     <QuizCard
       question={question}
       mode={mode}
+      reviewCount={reviewCount}
+      onAnswer={(discard, correct) => {
+        if (!correct) {
+          const mistakes = recordMistake({
+            hand: question.hand,
+            mode: questionMode,
+            selectedDiscard: discard,
+          });
+          setReviewCount(mistakes.length);
+          return "saved";
+        }
+
+        if (mode === "review") {
+          const mistakes = removeMistake(question.hand);
+          setReviewCount(mistakes.length);
+          return "mastered";
+        }
+
+        return null;
+      }}
       onModeChange={(nextMode) => {
         setMode(nextMode);
         createQuestion(evaluator, nextMode);

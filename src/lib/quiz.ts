@@ -1,13 +1,23 @@
-import { createRandomSanmaHand, toTileCounts } from "@/lib/tiles";
-import type { HandEvaluation, QuizMode, QuizQuestion, SanmaEvaluator } from "@/lib/types";
+import { SANMA_TILE_INDICES, createRandomSanmaHand, toTileCounts } from "@/lib/tiles";
+import type {
+  DiscardEvaluation,
+  GenerationMode,
+  HandEvaluation,
+  QuizQuestion,
+  SanmaEvaluator,
+} from "@/lib/types";
 
 const MIN_PREFERRED_SHANTEN = 1;
 const MAX_PREFERRED_SHANTEN = 3;
 const MAX_GENERATION_ATTEMPTS = 160;
+const TILE_COPIES = 4;
+const TILES_AFTER_DISCARD = 13;
+export const UNKNOWN_SANMA_TILES_AFTER_DISCARD =
+  SANMA_TILE_INDICES.length * TILE_COPIES - TILES_AFTER_DISCARD;
 
 export function generateQuizQuestion(
   evaluate: SanmaEvaluator,
-  mode: QuizMode = "standard",
+  mode: GenerationMode = "standard",
 ): QuizQuestion {
   let fallback: QuizQuestion | undefined;
 
@@ -35,4 +45,17 @@ export function generateQuizQuestion(
 
 export function isCorrectDiscard(selectedDiscard: string, evaluation: HandEvaluation): boolean {
   return evaluation.bestDiscards.includes(selectedDiscard);
+}
+
+export function nextDrawTenpaiProbability(candidate: DiscardEvaluation): {
+  effectiveCount: number;
+  unknownCount: number;
+  percentage: number;
+} {
+  const effectiveCount = candidate.shanten === 1 ? candidate.totalUkeire : 0;
+  return {
+    effectiveCount,
+    unknownCount: UNKNOWN_SANMA_TILES_AFTER_DISCARD,
+    percentage: (effectiveCount / UNKNOWN_SANMA_TILES_AFTER_DISCARD) * 100,
+  };
 }

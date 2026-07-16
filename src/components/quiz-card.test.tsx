@@ -47,6 +47,8 @@ describe("QuizCard", () => {
       <QuizCard
         mode="standard"
         question={question}
+        reviewCount={0}
+        onAnswer={vi.fn(() => null)}
         onModeChange={vi.fn()}
         onNextQuestion={vi.fn()}
         onRefreshQuestion={vi.fn()}
@@ -60,6 +62,7 @@ describe("QuizCard", () => {
     expect(screen.getByText("正解！")).toBeInTheDocument();
     expect(resultText("最善打：1m、9m")).toBeInTheDocument();
     expect(screen.getAllByText((_, element) => element?.textContent === "有効牌：2p×4")).toHaveLength(2);
+    expect(resultText("次の1ツモでテンパイする確率（概算）：4.2%（4/95枚）")).toBeInTheDocument();
   });
 
   it("accepts every tied best discard as correct", () => {
@@ -67,6 +70,8 @@ describe("QuizCard", () => {
       <QuizCard
         mode="standard"
         question={question}
+        reviewCount={0}
+        onAnswer={vi.fn(() => null)}
         onModeChange={vi.fn()}
         onNextQuestion={vi.fn()}
         onRefreshQuestion={vi.fn()}
@@ -85,6 +90,8 @@ describe("QuizCard", () => {
       <QuizCard
         mode="standard"
         question={question}
+        reviewCount={0}
+        onAnswer={vi.fn(() => null)}
         onModeChange={vi.fn()}
         onNextQuestion={vi.fn()}
         onRefreshQuestion={vi.fn()}
@@ -109,6 +116,8 @@ describe("QuizCard", () => {
       <QuizCard
         mode="standard"
         question={question}
+        reviewCount={0}
+        onAnswer={vi.fn(() => null)}
         onModeChange={vi.fn()}
         onNextQuestion={vi.fn()}
         onRefreshQuestion={vi.fn()}
@@ -124,6 +133,8 @@ describe("QuizCard", () => {
       <QuizCard
         mode="standard"
         question={question}
+        reviewCount={0}
+        onAnswer={vi.fn(() => null)}
         onModeChange={onModeChange}
         onNextQuestion={vi.fn()}
         onRefreshQuestion={vi.fn()}
@@ -133,5 +144,46 @@ describe("QuizCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "染め手" }));
 
     expect(onModeChange).toHaveBeenCalledWith("flush");
+  });
+
+  it("switches to review mode when mistakes are saved", () => {
+    const onModeChange = vi.fn();
+    render(
+      <QuizCard
+        mode="standard"
+        question={question}
+        reviewCount={2}
+        onAnswer={vi.fn(() => null)}
+        onModeChange={onModeChange}
+        onNextQuestion={vi.fn()}
+        onRefreshQuestion={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "復習（2）" }));
+
+    expect(onModeChange).toHaveBeenCalledWith("review");
+  });
+
+  it("records an incorrect answer and hides the tenpai probability", () => {
+    const onAnswer = vi.fn(() => "saved" as const);
+    render(
+      <QuizCard
+        mode="standard"
+        question={question}
+        reviewCount={0}
+        onAnswer={onAnswer}
+        onModeChange={vi.fn()}
+        onNextQuestion={vi.fn()}
+        onRefreshQuestion={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "1pを選択" }));
+    fireEvent.click(screen.getByRole("button", { name: "回答する" }));
+
+    expect(onAnswer).toHaveBeenCalledWith("1p", false);
+    expect(screen.getByText("この問題を復習リストに保存しました。")).toBeInTheDocument();
+    expect(screen.queryByText(/次の1ツモでテンパイする確率/)).not.toBeInTheDocument();
   });
 });

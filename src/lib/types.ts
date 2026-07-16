@@ -2,7 +2,9 @@ export type TileIndex = number;
 
 export type TileCount = number[];
 
-export type QuizMode = "standard" | "flush";
+export type GenerationMode = "standard" | "flush";
+
+export type QuizMode = GenerationMode | "review";
 
 export type EffectiveTile = {
   tile: string;

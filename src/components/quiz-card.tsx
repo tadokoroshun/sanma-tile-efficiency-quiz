@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { MahjongTile } from "@/components/mahjong-tile";
-import { isCorrectDiscard } from "@/lib/quiz";
+import { isCorrectDiscard, nextDrawTenpaiProbability } from "@/lib/quiz";
 import { tileLabel } from "@/lib/tiles";
 import type { DiscardEvaluation, QuizMode, QuizQuestion, TileIndex } from "@/lib/types";
+
+type AnswerRecordResult = "saved" | "mastered" | null;
 
 type QuizCardProps = {
   mode: QuizMode;
   question: QuizQuestion;
+  reviewCount: number;
+  onAnswer: (discard: string, correct: boolean) => AnswerRecordResult;
   onModeChange: (mode: QuizMode) => void;
   onNextQuestion: () => void;
   onRefreshQuestion: () => void;
@@ -17,6 +21,8 @@ type QuizCardProps = {
 export function QuizCard({
   mode,
   question,
+  reviewCount,
+  onAnswer,
   onModeChange,
   onNextQuestion,
   onRefreshQuestion,
@@ -24,6 +30,7 @@ export function QuizCard({
   const [selectedDiscard, setSelectedDiscard] = useState<string | null>(null);
   const [answeredDiscard, setAnsweredDiscard] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
+  const [answerRecordResult, setAnswerRecordResult] = useState<AnswerRecordResult>(null);
   const selectedCandidate = question.evaluation.candidates.find(
     (candidate) => candidate.discard === selectedDiscard,
   );
@@ -34,6 +41,10 @@ export function QuizCard({
     (candidate) => question.evaluation.bestDiscards.includes(candidate.discard),
   );
   const correct = answeredDiscard !== null && isCorrectDiscard(answeredDiscard, question.evaluation);
+  const tenpaiProbability =
+    correct && answeredCandidate !== undefined
+      ? nextDrawTenpaiProbability(answeredCandidate)
+      : undefined;
   const ukeireDifference =
     answeredCandidate !== undefined && bestCandidate !== undefined
       ? bestCandidate.totalUkeire - answeredCandidate.totalUkeire
@@ -53,6 +64,7 @@ export function QuizCard({
     setSelectedDiscard(null);
     setAnsweredDiscard(null);
     setAnswered(false);
+    setAnswerRecordResult(null);
     onNextQuestion();
   }
 
@@ -60,6 +72,7 @@ export function QuizCard({
     setSelectedDiscard(null);
     setAnsweredDiscard(null);
     setAnswered(false);
+    setAnswerRecordResult(null);
     onRefreshQuestion();
   }
 
@@ -70,6 +83,7 @@ export function QuizCard({
     setSelectedDiscard(null);
     setAnsweredDiscard(null);
     setAnswered(false);
+    setAnswerRecordResult(null);
     onModeChange(nextMode);
   }
 
@@ -101,9 +115,22 @@ export function QuizCard({
         >
           染め手
         </button>
+        <button
+          className={mode === "review" ? "is-selected" : ""}
+          type="button"
+          aria-pressed={mode === "review"}
+          disabled={reviewCount === 0}
+          onClick={() => changeMode("review")}
+        >
+          復習（{reviewCount}）
+        </button>
       </div>
       <p className="mode-hint">
-        {mode === "flush" ? "筒子または索子だけの一色手です。" : "筒子・索子から出題します。"}
+        {mode === "flush"
+          ? "筒子または索子だけの一色手です。"
+          : mode === "review"
+            ? "間違えた問題を端末内の記録から再出題します。"
+            : "筒子・索子から出題します。"}
       </p>
       <p className="shanten-hint">現在のシャンテン数：{question.evaluation.currentShanten}</p>
       <h2>切る牌を選んでください</h2>
@@ -131,8 +158,13 @@ export function QuizCard({
           type="button"
           disabled={selectedDiscard === null}
           onClick={() => {
+            if (selectedDiscard === null) {
+              return;
+            }
+            const isCorrect = isCorrectDiscard(selectedDiscard, question.evaluation);
             setAnsweredDiscard(selectedDiscard);
             setAnswered(true);
+            setAnswerRecordResult(onAnswer(selectedDiscard, isCorrect));
           }}
         >
           回答する
@@ -153,6 +185,24 @@ export function QuizCard({
             ))}
           </p>
           <p>受け入れ差：{ukeireDifference}枚</p>
+          {tenpaiProbability !== undefined ? (
+            <div className="tenpai-probability">
+              <p>
+                次の1ツモでテンパイする確率（概算）：
+                <strong>{tenpaiProbability.percentage.toFixed(1)}%</strong>
+                {answeredCandidate?.shanten === 1
+                  ? `（${tenpaiProbability.effectiveCount}/${tenpaiProbability.unknownCount}枚）`
+                  : `（${answeredCandidate?.shanten ?? 0}シャンテンのため）`}
+              </p>
+              <p>山・河・他家を考慮せず、自分の打牌後13枚だけが見えている前提です。</p>
+            </div>
+          ) : null}
+          {answerRecordResult === "saved" ? (
+            <p className="review-notice">この問題を復習リストに保存しました。</p>
+          ) : null}
+          {answerRecordResult === "mastered" ? (
+            <p className="review-notice">正解したため、復習リストから外しました。</p>
+          ) : null}
           <p className="comparison-hint">牌をタップすると、その打牌の有効牌を比較できます。</p>
           {selectedCandidate !== undefined ? (
             <p className="comparison-label">
