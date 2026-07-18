@@ -26,9 +26,9 @@ h1 { margin: 0; font-size: clamp(1.8rem, 7vw, 2.5rem); }
 .refresh-button { position: fixed; right: 18px; bottom: 18px; z-index: 10; display: grid; place-items: center; width: 54px; height: 54px; color: #fff; background: #215d81; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 4px 14px rgb(23 43 32 / 28%); cursor: pointer; font-size: 2rem; line-height: 1; transition: transform 150ms ease, background 150ms ease; }
 .refresh-button:hover, .refresh-button:focus-visible { background: #174965; transform: rotate(25deg) scale(1.07); }
 
-.hand-row { display: flex; flex-wrap: nowrap; gap: 4px; padding: 2px 2px 8px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
-.hand-tile { display: grid; flex: 0 0 auto; place-items: center; padding: 2px; background: #fffef8; border: 1px solid #c7d2c4; border-radius: 6px; }
-.hand-tile-image { display: block; width: 46px; height: 64px; pointer-events: none; }
+.hand-row { display: flex; flex-wrap: nowrap; gap: 2px; width: 100%; padding: 2px 0 8px; }
+.hand-tile { display: grid; flex: 1 1 0; min-width: 0; place-items: center; padding: 1px; background: #fffef8; border: 1px solid #c7d2c4; border-radius: 4px; }
+.hand-tile-image { display: block; width: 100%; max-width: 40px; height: auto; aspect-ratio: 3 / 4; pointer-events: none; }
 .discard-selector { display: flex; flex-wrap: wrap; gap: 8px; }
 .discard-button { display: grid; place-items: center; min-width: 44px; min-height: 58px; padding: 3px; background: #fffef8; border: 2px solid #b6c8b5; border-radius: 8px; box-shadow: 0 3px 0 #91aa92; cursor: pointer; }
 .discard-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #91aa92; }
@@ -63,8 +63,7 @@ h1 { margin: 0; font-size: clamp(1.8rem, 7vw, 2.5rem); }
 @media (max-width: 420px) {
   main { padding: 18px 12px 32px; }
   .quiz-card, .status-message { padding: 16px; }
-  .hand-row { gap: 3px; }
-  .hand-tile-image { width: 40px; height: 56px; }
+  .hand-row { gap: 1px; }
   .discard-selector { gap: 6px; }
   .discard-button { min-width: 40px; min-height: 54px; }
   .discard-tile-image { width: 31px; height: 44px; }
