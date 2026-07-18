@@ -55,6 +55,8 @@ describe("QuizCard", () => {
       />,
     );
 
+    expect(screen.getAllByRole("button", { name: "1mを選択" })).toHaveLength(1);
+    expect(screen.getByLabelText(/^手牌：/)).toBeInTheDocument();
     expect(screen.queryByText("最善打：1m、9m")).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "1mを選択" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "回答する" }));

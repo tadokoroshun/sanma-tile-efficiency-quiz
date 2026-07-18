@@ -133,20 +133,35 @@ export function QuizCard({
             : "筒子・索子から出題します。"}
       </p>
       <p className="shanten-hint">現在のシャンテン数：{question.evaluation.currentShanten}</p>
+      <div
+        className="hand-row"
+        aria-label={`手牌：${question.hand.map((tileIndex) => tileLabel(tileIndex)).join("、")}`}
+      >
+        {question.hand.map((tileIndex, position) => (
+          <span className="hand-tile" key={`${tileIndex}-${position}`}>
+            <MahjongTile decorative tileIndex={tileIndex} className="hand-tile-image" />
+          </span>
+        ))}
+      </div>
       <h2>切る牌を選んでください</h2>
-      <div className="tile-grid" aria-label="手牌">
-        {question.hand.map((tileIndex, position) => {
-          const label = tileLabel(tileIndex);
+      <div className="discard-selector" aria-label="打牌候補">
+        {question.evaluation.candidates.map((candidate) => {
+          const tileIndex = tileIndexForLabel(candidate.discard);
           return (
             <button
-              className={`tile-button ${selectedDiscard === label ? "is-selected" : ""}`}
-              key={`${tileIndex}-${position}`}
+              className={`discard-button ${selectedDiscard === candidate.discard ? "is-selected" : ""}`}
+              key={candidate.discard}
               type="button"
-              aria-label={`${label}を選択`}
-              aria-pressed={selectedDiscard === label}
-              onClick={() => setSelectedDiscard(label)}
+              aria-label={`${candidate.discard}を選択`}
+              aria-pressed={selectedDiscard === candidate.discard}
+              onClick={() => setSelectedDiscard(candidate.discard)}
             >
-              <MahjongTile decorative tileIndex={tileIndex} className="hand-tile-image" />
+              {tileIndex === undefined ? (
+                candidate.discard
+              ) : (
+                <MahjongTile decorative tileIndex={tileIndex} className="discard-tile-image" />
+              )}
+              <span className="sr-only">{candidate.discard}</span>
             </button>
           );
         })}
