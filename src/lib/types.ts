@@ -11,11 +11,18 @@ export type EffectiveTile = {
   remaining: number;
 };
 
+export type TenpaiQuality = {
+  goodShapeUkeire: number;
+  badShapeUkeire: number;
+  weightedWaitCount: number;
+};
+
 export type DiscardEvaluation = {
   discard: string;
   shanten: number;
   effectiveTiles: EffectiveTile[];
   totalUkeire: number;
+  tenpaiQuality: TenpaiQuality | null;
 };
 
 export type HandEvaluation = {

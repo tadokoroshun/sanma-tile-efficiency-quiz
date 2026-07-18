@@ -18,24 +18,40 @@ const question: QuizQuestion = {
         shanten: 1,
         effectiveTiles: [{ tile: "2p", remaining: 4 }],
         totalUkeire: 4,
+        tenpaiQuality: {
+          goodShapeUkeire: 3,
+          badShapeUkeire: 1,
+          weightedWaitCount: 24,
+        },
       },
       {
         discard: "9m",
         shanten: 1,
         effectiveTiles: [{ tile: "2p", remaining: 4 }],
         totalUkeire: 4,
+        tenpaiQuality: {
+          goodShapeUkeire: 3,
+          badShapeUkeire: 1,
+          weightedWaitCount: 24,
+        },
       },
       {
         discard: "1p",
         shanten: 1,
         effectiveTiles: [{ tile: "2p", remaining: 2 }],
         totalUkeire: 2,
+        tenpaiQuality: {
+          goodShapeUkeire: 0,
+          badShapeUkeire: 2,
+          weightedWaitCount: 4,
+        },
       },
       {
         discard: "3p",
         shanten: 2,
         effectiveTiles: [{ tile: "4p", remaining: 3 }],
         totalUkeire: 3,
+        tenpaiQuality: null,
       },
     ],
   },
@@ -65,6 +81,10 @@ describe("QuizCard", () => {
     expect(resultText("最善打：1m、9m")).toBeInTheDocument();
     expect(screen.getAllByText((_, element) => element?.textContent === "有効牌：2p×4")).toHaveLength(2);
     expect(resultText("次の1ツモでテンパイする確率（概算）：4.2%（4/95枚）")).toBeInTheDocument();
+    expect(
+      screen.getAllByText((_, element) => element?.textContent === "良型テンパイ：3枚／愚形：1枚"),
+    ).toHaveLength(2);
+    expect(screen.getAllByText("良型率：75.0%・テンパイ時平均待ち：6.0枚")).toHaveLength(2);
   });
 
   it("accepts every tied best discard as correct", () => {

@@ -55,6 +55,8 @@ h1 { margin: 0; font-size: clamp(1.8rem, 7vw, 2.5rem); }
 .candidate-result.is-active { border-color: #216038; box-shadow: 0 0 0 2px rgb(33 96 56 / 18%); }
 .candidate-result h4, .candidate-result p { margin: 4px 0; }
 .candidate-result p { line-height: 1.5; }
+.wait-quality { margin-top: 10px; padding: 8px 10px; background: #eef5ed; border-radius: 7px; }
+.wait-quality p:last-child { color: #4a6350; font-size: 0.78rem; }
 .error-message { color: #8e2b13; }
 .result-tile { display: inline-flex; width: 22px; height: 30px; margin: 0 1px; vertical-align: -9px; }
 .result-tile-image { width: 22px; height: 30px; }

@@ -218,7 +218,9 @@ export function QuizCard({
           {answerRecordResult === "mastered" ? (
             <p className="review-notice">正解したため、復習リストから外しました。</p>
           ) : null}
-          <p className="comparison-hint">牌をタップすると、その打牌の有効牌を比較できます。</p>
+          <p className="comparison-hint">
+            牌をタップすると、有効牌とテンパイ後の待ち質を比較できます。
+          </p>
           {selectedCandidate !== undefined ? (
             <p className="comparison-label">
               比較中：<TileLabel label={selectedCandidate.discard} />切り
@@ -261,7 +263,34 @@ function CandidateResult({ active, candidate }: { active: boolean; candidate: Di
             ))}
       </p>
       <p>合計：{candidate.totalUkeire}枚</p>
+      {candidate.tenpaiQuality === null ? null : (
+        <TenpaiQualityResult candidate={candidate} />
+      )}
     </article>
+  );
+}
+
+function TenpaiQualityResult({ candidate }: { candidate: DiscardEvaluation }) {
+  const quality = candidate.tenpaiQuality;
+  if (quality === null) {
+    return null;
+  }
+
+  const total = quality.goodShapeUkeire + quality.badShapeUkeire;
+  const goodRate = total === 0 ? 0 : (quality.goodShapeUkeire / total) * 100;
+  const averageWaitCount = total === 0 ? 0 : quality.weightedWaitCount / total;
+
+  return (
+    <div className="wait-quality">
+      <p>
+        良型テンパイ：<strong>{quality.goodShapeUkeire}枚</strong>／愚形：
+        {quality.badShapeUkeire}枚
+      </p>
+      <p>
+        良型率：{goodRate.toFixed(1)}%・テンパイ時平均待ち：{averageWaitCount.toFixed(1)}枚
+      </p>
+      <p>良型は、最大待ち枚数のテンパイ取りに両面待ちを含む形です。</p>
+    </div>
   );
 }
 

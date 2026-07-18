@@ -44,6 +44,7 @@ describe("quiz generation", () => {
       shanten: 1,
       effectiveTiles: [],
       totalUkeire: 12,
+      tenpaiQuality: null,
     };
 
     expect(nextDrawTenpaiProbability(candidate)).toEqual({
@@ -59,6 +60,7 @@ describe("quiz generation", () => {
       shanten: 2,
       effectiveTiles: [],
       totalUkeire: 30,
+      tenpaiQuality: null,
     };
 
     expect(nextDrawTenpaiProbability(candidate).percentage).toBe(0);

@@ -56,12 +56,36 @@ function parseDiscardEvaluation(value: unknown): HandEvaluation["candidates"][nu
     }
     return { tile: tile.tile, remaining: tile.remaining };
   });
+  const tenpaiQuality = parseTenpaiQuality(value.tenpaiQuality);
 
   return {
     discard: value.discard,
     shanten: value.shanten,
     effectiveTiles,
     totalUkeire: value.totalUkeire,
+    tenpaiQuality,
+  };
+}
+
+function parseTenpaiQuality(
+  value: unknown,
+): HandEvaluation["candidates"][number]["tenpaiQuality"] {
+  if (value === null) {
+    return null;
+  }
+  if (
+    !isRecord(value) ||
+    typeof value.goodShapeUkeire !== "number" ||
+    typeof value.badShapeUkeire !== "number" ||
+    typeof value.weightedWaitCount !== "number"
+  ) {
+    throw new Error("WASMから不正なテンパイ形評価を受け取りました。");
+  }
+
+  return {
+    goodShapeUkeire: value.goodShapeUkeire,
+    badShapeUkeire: value.badShapeUkeire,
+    weightedWaitCount: value.weightedWaitCount,
   };
 }
 

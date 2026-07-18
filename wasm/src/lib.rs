@@ -1,7 +1,8 @@
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 use xiangting::{
-    calculate_necessary_tiles, calculate_replacement_number, PlayerCount, TileCounts, TileFlagsExt,
+    calculate_necessary_tiles, calculate_replacement_number, calculate_unnecessary_tiles,
+    PlayerCount, TileCounts, TileFlagsExt,
 };
 
 const TILE_KIND_COUNT: usize = 34;
@@ -17,11 +18,20 @@ pub struct EffectiveTile {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TenpaiQuality {
+    good_shape_ukeire: u8,
+    bad_shape_ukeire: u8,
+    weighted_wait_count: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DiscardEvaluation {
     discard: String,
     shanten: i8,
     effective_tiles: Vec<EffectiveTile>,
     total_ukeire: u8,
+    tenpai_quality: Option<TenpaiQuality>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -59,12 +69,16 @@ pub fn evaluate_sanma_hand_counts(hand: &TileCounts) -> Result<HandEvaluation, S
         after_discard[tile_index] -= 1;
         let (candidate_shanten, effective_tiles) = effective_tiles_for(&after_discard)?;
         let total_ukeire = effective_tiles.iter().map(|tile| tile.remaining).sum();
+        let tenpai_quality = (candidate_shanten == 1)
+            .then(|| tenpai_quality_for(&after_discard, &effective_tiles))
+            .transpose()?;
 
         candidates.push(DiscardEvaluation {
             discard: tile_name(tile_index).to_owned(),
             shanten: candidate_shanten,
             effective_tiles,
             total_ukeire,
+            tenpai_quality,
         });
     }
 
@@ -136,6 +150,132 @@ fn effective_tiles_for(hand: &TileCounts) -> Result<(i8, Vec<EffectiveTile>), St
     Ok((replacement_number as i8 - 1, effective_tiles))
 }
 
+fn tenpai_quality_for(
+    hand: &TileCounts,
+    effective_tiles: &[EffectiveTile],
+) -> Result<TenpaiQuality, String> {
+    let mut quality = TenpaiQuality {
+        good_shape_ukeire: 0,
+        bad_shape_ukeire: 0,
+        weighted_wait_count: 0,
+    };
+
+    for effective_tile in effective_tiles {
+        let draw_index = tile_index_for_name(&effective_tile.tile)
+            .ok_or_else(|| format!("不明な牌です: {}", effective_tile.tile))?;
+        let mut after_draw = *hand;
+        after_draw[draw_index] += 1;
+        let (_, discard_flags) = calculate_unnecessary_tiles(&after_draw, &PlayerCount::Three)
+            .map_err(|error| error.to_string())?;
+        let discard_flags = discard_flags.to_array();
+        let mut best_outcome: Option<(u8, bool)> = None;
+
+        for discard_index in valid_tile_indices() {
+            if !discard_flags[discard_index] || after_draw[discard_index] == 0 {
+                continue;
+            }
+
+            let mut tenpai_hand = after_draw;
+            tenpai_hand[discard_index] -= 1;
+            let (resulting_shanten, winning_tiles) = effective_tiles_for(&tenpai_hand)?;
+            if resulting_shanten != 0 {
+                continue;
+            }
+
+            let wait_count = winning_tiles.iter().map(|tile| tile.remaining).sum();
+            let good_shape = has_ryanmen_wait(&tenpai_hand);
+            let outcome = (wait_count, good_shape);
+            if best_outcome.is_none_or(|best| outcome > best) {
+                best_outcome = Some(outcome);
+            }
+        }
+
+        let Some((wait_count, good_shape)) = best_outcome else {
+            return Err(format!(
+                "{}を引いた後のテンパイ形を評価できませんでした",
+                effective_tile.tile
+            ));
+        };
+
+        if good_shape {
+            quality.good_shape_ukeire += effective_tile.remaining;
+        } else {
+            quality.bad_shape_ukeire += effective_tile.remaining;
+        }
+        quality.weighted_wait_count += wait_count as u16 * effective_tile.remaining as u16;
+    }
+
+    Ok(quality)
+}
+
+fn has_ryanmen_wait(hand: &TileCounts) -> bool {
+    for pair_index in valid_tile_indices() {
+        if hand[pair_index] < 2 {
+            continue;
+        }
+
+        let mut without_pair = *hand;
+        without_pair[pair_index] -= 2;
+        for shape_start in [9usize, 18]
+            .into_iter()
+            .flat_map(|suit_start| (suit_start + 1)..=(suit_start + 6))
+        {
+            if without_pair[shape_start] == 0 || without_pair[shape_start + 1] == 0 {
+                continue;
+            }
+
+            let mut remaining = without_pair;
+            remaining[shape_start] -= 1;
+            remaining[shape_start + 1] -= 1;
+            if can_form_melds(&mut remaining, 3) {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+fn can_form_melds(hand: &mut TileCounts, melds_remaining: u8) -> bool {
+    if melds_remaining == 0 {
+        return hand.iter().all(|count| *count == 0);
+    }
+
+    let Some(tile_index) = hand.iter().position(|count| *count > 0) else {
+        return false;
+    };
+
+    if hand[tile_index] >= 3 {
+        hand[tile_index] -= 3;
+        if can_form_melds(hand, melds_remaining - 1) {
+            hand[tile_index] += 3;
+            return true;
+        }
+        hand[tile_index] += 3;
+    }
+
+    if tile_index < 27
+        && tile_index % 9 <= 6
+        && hand[tile_index + 1] > 0
+        && hand[tile_index + 2] > 0
+    {
+        hand[tile_index] -= 1;
+        hand[tile_index + 1] -= 1;
+        hand[tile_index + 2] -= 1;
+        if can_form_melds(hand, melds_remaining - 1) {
+            hand[tile_index] += 1;
+            hand[tile_index + 1] += 1;
+            hand[tile_index + 2] += 1;
+            return true;
+        }
+        hand[tile_index] += 1;
+        hand[tile_index + 1] += 1;
+        hand[tile_index + 2] += 1;
+    }
+
+    false
+}
+
 fn best_discards(candidates: &[DiscardEvaluation]) -> Vec<String> {
     let Some(best_shanten) = candidates.iter().map(|candidate| candidate.shanten).min() else {
         return Vec::new();
@@ -158,6 +298,10 @@ fn best_discards(candidates: &[DiscardEvaluation]) -> Vec<String> {
 
 fn valid_tile_indices() -> impl Iterator<Item = usize> {
     [0usize, 8].into_iter().chain(9..TILE_KIND_COUNT)
+}
+
+fn tile_index_for_name(name: &str) -> Option<usize> {
+    valid_tile_indices().find(|&tile_index| tile_name(tile_index) == name)
 }
 
 fn tile_name(tile_index: usize) -> &'static str {
@@ -187,6 +331,7 @@ mod tests {
             shanten,
             effective_tiles: Vec::new(),
             total_ukeire,
+            tenpai_quality: None,
         }
     }
 
@@ -294,5 +439,72 @@ mod tests {
             candidate("1p", 1, 11),
         ];
         assert_eq!(best_discards(&candidates), vec!["1m", "9m"]);
+    }
+
+    #[test]
+    fn identifies_ryanmen_and_bad_wait_shapes() {
+        let ryanmen = hand(&[
+            (9, 1),
+            (10, 1),
+            (11, 1),
+            (12, 1),
+            (13, 1),
+            (15, 2),
+            (18, 1),
+            (19, 1),
+            (20, 1),
+            (21, 1),
+            (22, 1),
+            (23, 1),
+        ]);
+        let kanchan = hand(&[
+            (9, 1),
+            (10, 1),
+            (11, 1),
+            (12, 1),
+            (14, 1),
+            (15, 2),
+            (18, 1),
+            (19, 1),
+            (20, 1),
+            (21, 1),
+            (22, 1),
+            (23, 1),
+        ]);
+
+        assert!(has_ryanmen_wait(&ryanmen));
+        assert!(!has_ryanmen_wait(&kanchan));
+    }
+
+    #[test]
+    fn compares_good_and_bad_tenpai_draws() {
+        let counts = hand(&[
+            (10, 1),
+            (13, 2),
+            (16, 1),
+            (18, 1),
+            (19, 1),
+            (20, 1),
+            (21, 1),
+            (22, 1),
+            (23, 1),
+            (24, 1),
+            (25, 1),
+            (26, 1),
+        ]);
+        let (candidate_shanten, effective_tiles) = effective_tiles_for(&counts).unwrap();
+        let quality = tenpai_quality_for(&counts, &effective_tiles).unwrap();
+
+        assert_eq!(candidate_shanten, 1);
+        assert!(quality.good_shape_ukeire > 0);
+        assert!(quality.bad_shape_ukeire > 0);
+        assert_eq!(
+            quality.good_shape_ukeire + quality.bad_shape_ukeire,
+            effective_tiles
+                .iter()
+                .map(|tile| tile.remaining)
+                .sum::<u8>()
+        );
+        assert!(quality.weighted_wait_count > 0);
     }
 }
