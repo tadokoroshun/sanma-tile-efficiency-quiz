@@ -102,12 +102,13 @@ export function QuizClient() {
       question={question}
       mode={mode}
       reviewCount={reviewCount}
-      onAnswer={(discard, correct) => {
+      onAnswer={(discard, correct, mistakeTypes) => {
         if (!correct) {
           const mistakes = recordMistake({
             hand: question.hand,
             mode: questionMode,
             selectedDiscard: discard,
+            mistakeTypes,
           });
           setReviewCount(mistakes.length);
           return "saved";

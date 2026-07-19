@@ -204,8 +204,10 @@ describe("QuizCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "1pを選択" }));
     fireEvent.click(screen.getByRole("button", { name: "回答する" }));
 
-    expect(onAnswer).toHaveBeenCalledWith("1p", false);
+    expect(onAnswer).toHaveBeenCalledWith("1p", false, ["ukeire-loss", "good-shape-loss"]);
     expect(screen.getByText("この問題を復習リストに保存しました。")).toBeInTheDocument();
+    expect(screen.getByText("受け入れ不足")).toBeInTheDocument();
+    expect(screen.getByText("良型率低下")).toBeInTheDocument();
     expect(screen.queryByText(/次の1ツモでテンパイする確率/)).not.toBeInTheDocument();
   });
 });

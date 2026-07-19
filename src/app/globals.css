@@ -47,6 +47,9 @@ h1 { margin: 0; font-size: clamp(1.8rem, 7vw, 2.5rem); }
 .tenpai-probability { margin: 12px 0; padding: 10px 12px; background: rgb(255 255 255 / 68%); border-radius: 8px; }
 .tenpai-probability p { margin: 3px 0; }
 .tenpai-probability p:last-child { color: #4a6350; font-size: 0.78rem; }
+.mistake-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.mistake-tags span { padding: 4px 8px; color: #8e2b13; background: #ffe4d8; border: 1px solid #e8ac94; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.mistake-tags .mistake-tags-label { color: #4a6350; background: transparent; border-color: transparent; }
 .review-notice { color: #215d81; font-weight: 700; }
 .comparison-hint { color: #4a6350; font-size: 0.9rem; }
 .comparison-label { font-weight: 700; }

@@ -1,4 +1,6 @@
 import { HAND_TILE_COUNT, QUIZ_HAND_TILE_INDICES, sortHand } from "@/lib/tiles";
+import { MISTAKE_TYPES } from "@/lib/mistake-classification";
+import type { MistakeType } from "@/lib/mistake-classification";
 import type { GenerationMode, TileIndex } from "@/lib/types";
 
 const STORAGE_KEY = "sanma-tile-efficiency-quiz:mistakes:v1";
@@ -12,6 +14,8 @@ export type SavedMistake = {
   mode: GenerationMode;
   mistakeCount: number;
   lastSelectedDiscard: string;
+  lastMistakeTypes: MistakeType[];
+  mistakeTypeCounts: Partial<Record<MistakeType, number>>;
   lastMistakeAt: string;
 };
 
@@ -19,6 +23,7 @@ type RecordMistakeInput = {
   hand: readonly TileIndex[];
   mode: GenerationMode;
   selectedDiscard: string;
+  mistakeTypes: readonly MistakeType[];
 };
 
 export function loadMistakes(storage: StorageLike | null = browserStorage()): SavedMistake[] {
@@ -32,7 +37,12 @@ export function loadMistakes(storage: StorageLike | null = browserStorage()): Sa
       return [];
     }
     const parsed: unknown = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed.filter(isSavedMistake) : [];
+    return Array.isArray(parsed)
+      ? parsed.flatMap((value) => {
+          const mistake = parseSavedMistake(value);
+          return mistake === null ? [] : [mistake];
+        })
+      : [];
   } catch {
     return [];
   }
@@ -51,12 +61,18 @@ export function recordMistake(
   const id = handId(hand);
   const mistakes = loadMistakes(storage);
   const previous = mistakes.find((mistake) => mistake.id === id);
+  const mistakeTypeCounts = { ...(previous?.mistakeTypeCounts ?? {}) };
+  for (const mistakeType of new Set(input.mistakeTypes)) {
+    mistakeTypeCounts[mistakeType] = (mistakeTypeCounts[mistakeType] ?? 0) + 1;
+  }
   const updated: SavedMistake = {
     id,
     hand,
     mode: input.mode,
     mistakeCount: (previous?.mistakeCount ?? 0) + 1,
     lastSelectedDiscard: input.selectedDiscard,
+    lastMistakeTypes: [...new Set(input.mistakeTypes)],
+    mistakeTypeCounts,
     lastMistakeAt: now(),
   };
   const next = [
@@ -118,13 +134,13 @@ function handId(hand: readonly TileIndex[]): string {
   return sortHand(hand).join(",");
 }
 
-function isSavedMistake(value: unknown): value is SavedMistake {
+function parseSavedMistake(value: unknown): SavedMistake | null {
   if (typeof value !== "object" || value === null) {
-    return false;
+    return null;
   }
 
-  const candidate = value as Partial<SavedMistake>;
-  return (
+  const candidate = value as Record<string, unknown>;
+  const valid =
     typeof candidate.id === "string" &&
     Array.isArray(candidate.hand) &&
     candidate.hand.length === HAND_TILE_COUNT &&
@@ -137,6 +153,45 @@ function isSavedMistake(value: unknown): value is SavedMistake {
     Number.isInteger(candidate.mistakeCount) &&
     candidate.mistakeCount > 0 &&
     typeof candidate.lastSelectedDiscard === "string" &&
-    typeof candidate.lastMistakeAt === "string"
-  );
+    typeof candidate.lastMistakeAt === "string";
+  if (!valid) {
+    return null;
+  }
+
+  return {
+    id: candidate.id as string,
+    hand: candidate.hand as TileIndex[],
+    mode: candidate.mode as GenerationMode,
+    mistakeCount: candidate.mistakeCount as number,
+    lastSelectedDiscard: candidate.lastSelectedDiscard as string,
+    lastMistakeTypes: parseMistakeTypes(candidate.lastMistakeTypes),
+    mistakeTypeCounts: parseMistakeTypeCounts(candidate.mistakeTypeCounts),
+    lastMistakeAt: candidate.lastMistakeAt as string,
+  };
+}
+
+function parseMistakeTypes(value: unknown): MistakeType[] {
+  return Array.isArray(value)
+    ? [...new Set(value.filter((item): item is MistakeType => isMistakeType(item)))]
+    : [];
+}
+
+function parseMistakeTypeCounts(value: unknown): Partial<Record<MistakeType, number>> {
+  if (typeof value !== "object" || value === null) {
+    return {};
+  }
+
+  const stored = value as Record<string, unknown>;
+  const counts: Partial<Record<MistakeType, number>> = {};
+  for (const mistakeType of MISTAKE_TYPES) {
+    const count = stored[mistakeType];
+    if (typeof count === "number" && Number.isInteger(count) && count > 0) {
+      counts[mistakeType] = count;
+    }
+  }
+  return counts;
+}
+
+function isMistakeType(value: unknown): value is MistakeType {
+  return typeof value === "string" && MISTAKE_TYPES.some((type) => type === value);
 }

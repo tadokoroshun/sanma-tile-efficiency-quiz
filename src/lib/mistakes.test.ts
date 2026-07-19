@@ -16,12 +16,22 @@ describe("mistake storage", () => {
 
   it("stores duplicate hands as one pattern and increments the count", () => {
     recordMistake(
-      { hand, mode: "standard", selectedDiscard: "1p" },
+      {
+        hand,
+        mode: "standard",
+        selectedDiscard: "1p",
+        mistakeTypes: ["ukeire-loss"],
+      },
       window.localStorage,
       () => "2026-07-17T00:00:00.000Z",
     );
     recordMistake(
-      { hand, mode: "standard", selectedDiscard: "2p" },
+      {
+        hand,
+        mode: "standard",
+        selectedDiscard: "2p",
+        mistakeTypes: ["shanten-loss"],
+      },
       window.localStorage,
       () => "2026-07-17T00:01:00.000Z",
     );
@@ -33,6 +43,11 @@ describe("mistake storage", () => {
         mode: "standard",
         mistakeCount: 2,
         lastSelectedDiscard: "2p",
+        lastMistakeTypes: ["shanten-loss"],
+        mistakeTypeCounts: {
+          "shanten-loss": 1,
+          "ukeire-loss": 1,
+        },
         lastMistakeAt: "2026-07-17T00:01:00.000Z",
       },
     ]);
@@ -40,7 +55,7 @@ describe("mistake storage", () => {
 
   it("removes a mastered review hand", () => {
     recordMistake(
-      { hand, mode: "flush", selectedDiscard: "1p" },
+      { hand, mode: "flush", selectedDiscard: "1p", mistakeTypes: [] },
       window.localStorage,
     );
 
@@ -50,7 +65,7 @@ describe("mistake storage", () => {
 
   it("chooses a saved hand for review", () => {
     const mistakes = recordMistake(
-      { hand, mode: "standard", selectedDiscard: "1p" },
+      { hand, mode: "standard", selectedDiscard: "1p", mistakeTypes: [] },
       window.localStorage,
     );
 
@@ -73,6 +88,7 @@ describe("mistake storage", () => {
           hand: uniqueHand,
           mode: "standard",
           selectedDiscard: "1p",
+          mistakeTypes: ["ukeire-loss"],
         },
         window.localStorage,
         () => `2026-07-17T00:${String(index).padStart(2, "0")}:00.000Z`,
@@ -80,5 +96,26 @@ describe("mistake storage", () => {
     });
 
     expect(loadMistakes(window.localStorage)).toHaveLength(MAX_SAVED_MISTAKES);
+  });
+
+  it("loads records saved before mistake classification was added", () => {
+    window.localStorage.setItem(
+      "sanma-tile-efficiency-quiz:mistakes:v1",
+      JSON.stringify([
+        {
+          id: hand.join(","),
+          hand,
+          mode: "standard",
+          mistakeCount: 1,
+          lastSelectedDiscard: "1p",
+          lastMistakeAt: "2026-07-17T00:00:00.000Z",
+        },
+      ]),
+    );
+
+    expect(loadMistakes(window.localStorage)[0]).toMatchObject({
+      lastMistakeTypes: [],
+      mistakeTypeCounts: {},
+    });
   });
 });

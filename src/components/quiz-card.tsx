@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { MahjongTile } from "@/components/mahjong-tile";
+import { classifyMistake, MISTAKE_TYPE_LABELS } from "@/lib/mistake-classification";
 import { isCorrectDiscard, nextDrawTenpaiProbability } from "@/lib/quiz";
 import { tileLabel } from "@/lib/tiles";
+import type { MistakeType } from "@/lib/mistake-classification";
 import type { DiscardEvaluation, QuizMode, QuizQuestion, TileIndex } from "@/lib/types";
 
 type AnswerRecordResult = "saved" | "mastered" | null;
@@ -12,7 +14,11 @@ type QuizCardProps = {
   mode: QuizMode;
   question: QuizQuestion;
   reviewCount: number;
-  onAnswer: (discard: string, correct: boolean) => AnswerRecordResult;
+  onAnswer: (
+    discard: string,
+    correct: boolean,
+    mistakeTypes: readonly MistakeType[],
+  ) => AnswerRecordResult;
   onModeChange: (mode: QuizMode) => void;
   onNextQuestion: () => void;
   onRefreshQuestion: () => void;
@@ -41,14 +47,22 @@ export function QuizCard({
     (candidate) => question.evaluation.bestDiscards.includes(candidate.discard),
   );
   const correct = answeredDiscard !== null && isCorrectDiscard(answeredDiscard, question.evaluation);
+  const mistakeTypes =
+    answeredDiscard === null ? [] : classifyMistake(answeredDiscard, question.evaluation);
   const tenpaiProbability =
     correct && answeredCandidate !== undefined
       ? nextDrawTenpaiProbability(answeredCandidate)
       : undefined;
-  const ukeireDifference =
-    answeredCandidate !== undefined && bestCandidate !== undefined
+  const sameShanten =
+    answeredCandidate !== undefined &&
+    bestCandidate !== undefined &&
+    answeredCandidate.shanten === bestCandidate.shanten;
+  const evaluationDifference =
+    answeredCandidate !== undefined && bestCandidate !== undefined && sameShanten
       ? bestCandidate.totalUkeire - answeredCandidate.totalUkeire
-      : 0;
+      : answeredCandidate !== undefined && bestCandidate !== undefined
+        ? answeredCandidate.shanten - bestCandidate.shanten
+        : 0;
   const bestCandidates = question.evaluation.candidates.filter((candidate) =>
     question.evaluation.bestDiscards.includes(candidate.discard),
   );
@@ -177,9 +191,15 @@ export function QuizCard({
               return;
             }
             const isCorrect = isCorrectDiscard(selectedDiscard, question.evaluation);
+            const selectedMistakeTypes = classifyMistake(
+              selectedDiscard,
+              question.evaluation,
+            );
             setAnsweredDiscard(selectedDiscard);
             setAnswered(true);
-            setAnswerRecordResult(onAnswer(selectedDiscard, isCorrect));
+            setAnswerRecordResult(
+              onAnswer(selectedDiscard, isCorrect, selectedMistakeTypes),
+            );
           }}
         >
           回答する
@@ -199,7 +219,18 @@ export function QuizCard({
               </span>
             ))}
           </p>
-          <p>受け入れ差：{ukeireDifference}枚</p>
+          <p>
+            {sameShanten ? "受け入れ差" : "シャンテン差"}：{evaluationDifference}
+            {sameShanten ? "枚" : ""}
+          </p>
+          {correct || mistakeTypes.length === 0 ? null : (
+            <div className="mistake-tags" aria-label="ミス分類">
+              <span className="mistake-tags-label">ミス分類</span>
+              {mistakeTypes.map((mistakeType) => (
+                <span key={mistakeType}>{MISTAKE_TYPE_LABELS[mistakeType]}</span>
+              ))}
+            </div>
+          )}
           {tenpaiProbability !== undefined ? (
             <div className="tenpai-probability">
               <p>
